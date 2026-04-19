@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tangent Tracker - Flat Design</title>
+    <title>Tangent Tracker - Flat Design & Input</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body {
@@ -67,8 +67,26 @@
             font-size: 1.2rem;
             font-weight: bold;
             color: #2c3e50;
-            min-width: 80px;
-            text-align: right;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        /* เพิ่ม CSS สำหรับช่องกรอกตัวเลข */
+        #xInput {
+            font-family: 'Prompt', sans-serif;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            width: 80px;
+            text-align: center;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            padding: 4px 8px;
+            transition: border-color 0.3s;
+        }
+        #xInput:focus {
+            outline: none;
+            border-color: #3498db;
         }
     </style>
 </head>
@@ -85,7 +103,9 @@
         <div class="slider-container">
             <label for="xSlider"><strong>ปรับพิกัด x ของจุด Q:</strong></label>
             <input type="range" id="xSlider" min="-1.5" max="3" step="0.01" value="1.8">
-            <div class="x-value-display">x = <span id="xValue">1.80</span></div>
+            <div class="x-value-display">
+                x = <input type="number" id="xInput" min="-1.5" max="3" step="0.01" value="1.80">
+            </div>
         </div>
     </div>
 </div>
@@ -94,7 +114,7 @@
     const canvas = document.getElementById('mathCanvas');
     const ctx = canvas.getContext('2d');
     const slider = document.getElementById('xSlider');
-    const xValueDisplay = document.getElementById('xValue');
+    const xInput = document.getElementById('xInput'); // เปลี่ยนมารับค่าจาก input แทน span
 
     function f(x) { return x * x; }
 
@@ -269,15 +289,31 @@
         ctx.fill();
         ctx.stroke();
 
-        // ป้าย Q (ดันขึ้นด้านบนอีกนิดเป็น -50 เพื่อให้พ้นหัวและหมวกของตัวละคร)
         ctx.fillStyle = highlightColor;
         let qLabel = isTangent ? `Tangent Point (1.00, 1.00)` : `Q(${qX.toFixed(2)}, ${qY.toFixed(2)})`;
         ctx.fillText(qLabel, mapX(qX) + 20, mapY(qY) - 50);
 
-        xValueDisplay.innerText = qX.toFixed(2);
+        // อัปเดตช่องกรอกตัวเลขเฉพาะตอนที่ไม่ได้กำลังพิมพ์อยู่ เพื่อป้องกันเคอร์เซอร์กระตุก
+        if (document.activeElement !== xInput) {
+            xInput.value = qX.toFixed(2);
+        }
     }
 
+    // Event Listener สำหรับ Slider
     slider.addEventListener('input', draw);
+
+    // Event Listener สำหรับช่องกรอกตัวเลข
+    xInput.addEventListener('input', () => {
+        let val = parseFloat(xInput.value);
+        if (!isNaN(val)) {
+            // ป้องกันไม่ให้ใส่ค่าเกินขอบเขตของ Slider
+            if(val < parseFloat(slider.min)) val = slider.min;
+            if(val > parseFloat(slider.max)) val = slider.max;
+            slider.value = val;
+            draw();
+        }
+    });
+
     resizeCanvas();
 </script>
 
