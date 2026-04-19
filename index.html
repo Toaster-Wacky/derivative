@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tangent Tracker - Flat Design</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .app-container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 900px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            background-color: #fdfdfd;
+            overflow: hidden;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .controls-panel {
+            margin-top: 25px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #3498db;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        input[type=range] {
+            flex-grow: 1;
+            cursor: pointer;
+            height: 8px;
+            accent-color: #3498db;
+        }
+        .x-value-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            min-width: 80px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h1>นักล่าเส้นสัมผัส (Tangent Tracker) 🛹</h1>
+    
+    <div class="canvas-wrapper">
+        <canvas id="mathCanvas"></canvas>
+    </div>
+
+    <div class="controls-panel">
+        <div class="slider-container">
+            <label for="xSlider"><strong>ปรับพิกัด x ของจุด Q:</strong></label>
+            <input type="range" id="xSlider" min="-1.5" max="3" step="0.01" value="1.8">
+            <div class="x-value-display">x = <span id="xValue">1.80</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('mathCanvas');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('xSlider');
+    const xValueDisplay = document.getElementById('xValue');
+
+    function f(x) { return x * x; }
+
+    const minX = -2, maxX = 4, minY = -1, maxY = 9;
+
+    function mapX(x) { return ((x - minX) / (maxX - minX)) * canvas.width; }
+    function mapY(y) { return canvas.height - (((y - minY) / (maxY - minY)) * canvas.height); }
+
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawSkater(px, py) {
+        let mathX_rev = (px / canvas.width) * (maxX - minX) + minX;
+        let slope_math = 2 * mathX_rev; 
+        
+        let a = canvas.width / (maxX - minX);
+        let c = -canvas.height / (maxY - minY);
+        let pixel_slope = (c / a) * slope_math;
+        let angle = Math.atan(pixel_slope);
+
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(angle);
+
+        // 1. สเก็ตบอร์ด
+        ctx.fillStyle = '#ff4757'; 
+        ctx.beginPath();
+        if(ctx.roundRect) {
+            ctx.roundRect(-22, -5, 44, 7, 3); 
+        } else {
+            ctx.fillRect(-22, -5, 44, 7);
+        }
+        ctx.fill();
+        
+        // 2. ล้อสเก็ตบอร์ด
+        ctx.fillStyle = '#2f3542'; 
+        ctx.beginPath();
+        ctx.arc(-14, 5, 5, 0, Math.PI * 2);
+        ctx.arc(14, 5, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. กางเกง 
+        ctx.fillStyle = '#2f3542'; 
+        ctx.beginPath(); 
+        ctx.moveTo(-12, -5); ctx.lineTo(-18, -22); ctx.lineTo(-10, -24); ctx.lineTo(-5, -5); ctx.fill();
+        ctx.beginPath(); 
+        ctx.moveTo(12, -5); ctx.lineTo(14, -24); ctx.lineTo(6, -26); ctx.lineTo(3, -5); ctx.fill();
+
+        // 4. เสื้อฮู้ด 
+        ctx.fillStyle = '#3742fa'; 
+        ctx.beginPath(); 
+        ctx.moveTo(-18, -22); ctx.lineTo(14, -24); ctx.lineTo(20, -42); ctx.lineTo(-8, -40); ctx.fill();
+
+        // 5. หัวและหมวกแก๊ป
+        ctx.fillStyle = '#2f3542'; 
+        ctx.beginPath();
+        ctx.arc(12, -48, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); 
+        ctx.moveTo(12, -50); ctx.lineTo(26, -48); ctx.lineTo(12, -44); ctx.fill();
+
+        // 6. แขน
+        ctx.strokeStyle = '#5352ed'; 
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(5, -38); ctx.lineTo(-15, -28); 
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(15, -38); ctx.lineTo(30, -30); 
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Grid & Axes
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#ecf0f1';
+        for(let i = Math.ceil(minX); i <= maxX; i++) {
+            ctx.beginPath(); ctx.moveTo(mapX(i), 0); ctx.lineTo(mapX(i), canvas.height); ctx.stroke();
+        }
+        for(let i = Math.ceil(minY); i <= maxY; i++) {
+            ctx.beginPath(); ctx.moveTo(0, mapY(i)); ctx.lineTo(canvas.width, mapY(i)); ctx.stroke();
+        }
+
+        ctx.strokeStyle = '#bdc3c7';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, mapY(0)); ctx.lineTo(canvas.width, mapY(0)); ctx.stroke(); 
+        ctx.beginPath(); ctx.moveTo(mapX(0), 0); ctx.lineTo(mapX(0), canvas.height); ctx.stroke(); 
+        
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = '12px Arial';
+        for(let i = Math.ceil(minX); i <= maxX; i++) {
+            if(i !== 0) ctx.fillText(i, mapX(i) - 4, mapY(0) + 15);
+        }
+
+        // 2. Parabola
+        ctx.beginPath();
+        ctx.strokeStyle = '#3498db';
+        ctx.lineWidth = 4;
+        for (let px = 0; px <= canvas.width; px++) {
+            let mathX = minX + (px / canvas.width) * (maxX - minX);
+            let mathY = f(mathX);
+            if (px === 0) ctx.moveTo(mapX(mathX), mapY(mathY));
+            else ctx.lineTo(mapX(mathX), mapY(mathY));
+        }
+        ctx.stroke();
+
+        // 3. Points P & Q
+        const pX = 1;
+        const pY = f(pX);
+        let qX = parseFloat(slider.value);
+        let qY = f(qX);
+
+        let isTangent = Math.abs(qX - pX) < 0.05;
+        if(isTangent) {
+            qX = pX; 
+            qY = pY;
+        }
+
+        const highlightColor = isTangent ? '#2ecc71' : '#e74c3c';
+
+        // 4. Triangle (No text)
+        if (!isTangent) {
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#95a5a6';
+            ctx.lineWidth = 2;
+            ctx.moveTo(mapX(pX), mapY(pY));
+            ctx.lineTo(mapX(qX), mapY(pY));
+            ctx.lineTo(mapX(qX), mapY(qY));
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // 5. Secant/Tangent Line
+        ctx.beginPath();
+        ctx.strokeStyle = highlightColor;
+        ctx.lineWidth = 3;
+        let slope = isTangent ? 2 * pX : (qY - pY) / (qX - pX);
+        let lineStartX = minX;
+        let lineStartY = pY + slope * (lineStartX - pX);
+        let lineEndX = maxX;
+        let lineEndY = pY + slope * (lineEndX - pX);
+        ctx.moveTo(mapX(lineStartX), mapY(lineStartY));
+        ctx.lineTo(mapX(lineEndX), mapY(lineEndY));
+        ctx.stroke();
+
+        // 6. Labels & Points
+        ctx.font = 'bold 14px Prompt';
+        
+        ctx.beginPath();
+        ctx.arc(mapX(pX), mapY(pY), 7, 0, Math.PI * 2);
+        ctx.fillStyle = isTangent ? highlightColor : '#34495e';
+        ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillText('P(1, 1)', mapX(pX) + 15, mapY(pY) + 25);
+
+        drawSkater(mapX(qX), mapY(qY));
+
+        ctx.beginPath();
+        ctx.arc(mapX(qX), mapY(qY), 7, 0, Math.PI * 2);
+        ctx.fillStyle = highlightColor;
+        ctx.fill();
+        ctx.stroke();
+
+        // ป้าย Q (ดันขึ้นด้านบนอีกนิดเป็น -50 เพื่อให้พ้นหัวและหมวกของตัวละคร)
+        ctx.fillStyle = highlightColor;
+        let qLabel = isTangent ? `Tangent Point (1.00, 1.00)` : `Q(${qX.toFixed(2)}, ${qY.toFixed(2)})`;
+        ctx.fillText(qLabel, mapX(qX) + 20, mapY(qY) - 50);
+
+        xValueDisplay.innerText = qX.toFixed(2);
+    }
+
+    slider.addEventListener('input', draw);
+    resizeCanvas();
+</script>
+
+</body>
+</html>
